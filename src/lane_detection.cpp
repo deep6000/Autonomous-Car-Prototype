@@ -1,42 +1,83 @@
-
-
- 
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-#include <string>
-
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include "opencv2/objdetect.hpp"
-
-using namespace cv;
-using namespace std;
-
-
-#define KERNEL_SIZE								(7)
-#define CANNY_MIN_THRES							(70)
-#define CANNY_MAX_THRES							(140)
-#define SLOPE_THRES								(0.5)
-
-#define ConvertRGB2HLS(input,output) 			cvtColor(input, output, COLOR_BGR2HLS);
-#define ConvertRGB2HSV(input,output) 			cvtColor(input, output, COLOR_BGR2HSV);
-#define ConvertRGB2GRAY(input,output) 			cvtColor(input, output, COLOR_BGR2GRAY);
-
-#define ExtractWhite(HSL, white)				inRange(HSL, Scalar(20,100,0), Scalar(40,255,50), white);
-#define ExtractYellow(HSV, yellow)				inRange(HSV, Scalar(20,90,100), Scalar(40,255,150), yellow);
-
-#define OR_Frames(frame1, frame2,output)		bitwise_or(frame1, frame2, output);
-#define AND_Frames(frame1, frame2,output)		bitwise_and(frame1, frame2, output);
-
+/**
+ * @file lane_detection.cpp
+ * @author your name (you@domain.com)
+ * @brief 
+ * @version 0.1
+ * @date 2019-08-02
+ * @reference https://github.com/MichiMaestre/Lane-Detection-for-Autonomous-Cars/blob/master/LaneDetector/demo.cpp
+ * @copyright Copyright (c) 2019
+ * 
+ */
+#include "lane_detection.h"
 
 double right_m, left_m;
 Point right_b,left_b;
 bool right_lane , left_lane;
 
+void* lane_detection(void* threadargs)
+{
 
+	Mat frame,frame_half,framebr,HLS,HSV,yellow,white,denoise,edge,lanes, lane_detect,roi_mask;
+
+	vector<vector<Vec4i>> left_right_lines;
+	std::vector<cv::Point> lane;
+	Point l; 
+	
+	while(1)
+	{
+		//frame = imread(argv[1]);
+		frame = Cap_frame.clone();
+
+	
+		//imwrite("test.png",frame);
+		
+		ConvertRGB2HLS(frame,HLS);
+		//imshow("HLS",HLS);
+
+		
+		ConvertRGB2HSV(frame, HSV);
+		
+		//imshow("HSV",HSV);
+		
+		ExtractWhite(HLS,white);
+		//imshow("white",white);
+
+		ExtractYellow(HSV,yellow)	
+		//imshow("HLSyellow",yellow);
+		
+		OR_Frames(white, yellow, lanes);
+		//imshow("ORing",lanes);
+
+		denoise = DenoiseFrame(lanes,KERNEL_SIZE);
+		
+		//imshow("Denoise",denoise);
+
+		edge = DetectEdge(denoise,CANNY_MIN_THRES,CANNY_MAX_THRES);
+		//imshow("Edge",edge);
+
+	    roi_mask = CreateROImask(edge);
+		//imshow("ROI MASK", roi_mask);
+		
+		AND_Frames(edge, roi_mask, edge);
+		//imshow("Edge", edge);
+		vector<Vec4i> lines;
+
+
+		HoughLinesP(edge, lines, 1, CV_PI/180, 40, 10, 100);
+	
+		
+		left_right_lines = LaneSeperation(lines, edge);
+	
+	//	lane = AverageLines(left_right_lines, edge);
+
+		//frame = PlotLines(frame,lane);
+
+		//add semaphores here
+
+		frame_locs.lane = GetLinesCordinates(frame,left_right_lines);
+		
+	}
+}
 
 double average(int a[], int n) 
 { 
@@ -48,13 +89,7 @@ double average(int a[], int n)
     return sum/n; 
 } 
 
-/**
- * @brief  Crop image which you don't need
- * 
- * @param input 
- * @param factor 
- * @return Mat 
- */
+
 Mat Cropframe(Mat input, uint8_t factor)
 {
 	Mat result;
@@ -62,27 +97,14 @@ Mat Cropframe(Mat input, uint8_t factor)
 	return result;
 }
 
-/**
- * @brief  Remove noise from the image
- * 
- * @param input 
- * @param kernel_size 
- * @return Mat 
- */
+
 Mat DenoiseFrame(Mat input, uint8_t kernel_size)
 {
 	Mat gaussian;
 	GaussianBlur(input, gaussian, Size(kernel_size, kernel_size), 0, 0 );
 	return gaussian;
 } 
-/**
- * @brief Perform Edge detection
- * 
- * @param input 
- * @param MinThresh 
- * @param MaxThresh 
- * @return Mat - frame
- */
+
 
 Mat DetectEdge(Mat input,unsigned int MinThresh, unsigned int MaxThresh)
 {
@@ -90,12 +112,7 @@ Mat DetectEdge(Mat input,unsigned int MinThresh, unsigned int MaxThresh)
 	Canny(input, Edge, MinThresh, MaxThresh, 3, true);	
 	return Edge;
 }
-/**
- * @brief Create region of interest
- * 
- * @param input 
- * @return Mat 
- */
+
 Mat CreateROImask(Mat input)
 {
 		Mat mask;
@@ -114,12 +131,7 @@ Mat CreateROImask(Mat input)
 		return mask;
 
 }
-/**
- * @brief Brighten the image 
- * 
- * @param image 
- * @return Mat 
- */
+
 Mat BrightenFrame(Mat image)
 {
 	Mat new_image;
@@ -136,13 +148,7 @@ Mat BrightenFrame(Mat image)
 	return image;
 }
 
-/**
- * @brief Serperate left and right lane
- * 
- * @param lines 
- * @param frame 
- * @return vector<vector<Vec4i>> 
- */
+
 vector<vector<Vec4i>> LaneSeperation(vector <Vec4i> lines, Mat frame)
 {
 	double slope;
@@ -268,13 +274,17 @@ Mat PlotLines(Mat inputImage, vector<Point> lane)
 }
 
 
-Mat PlotLines2( Mat frame, vector<vector<Vec4i> > left_right_lines)
+Lane_Cordinates GetLinesCordinates( Mat frame, vector<vector<Vec4i> > left_right_lines)
 {
+	Lane_Cordinates lanes;
 	Mat Output;
 	frame.copyTo(Output);
+
 	vector<Vec4i> right;
 	vector<Vec4i> left;
 
+	bool right_lane_exist;
+	bool left_lane_exist;
 	right = left_right_lines[0];
 	left  = left_right_lines[1];
 	double slope;
@@ -288,10 +298,13 @@ Mat PlotLines2( Mat frame, vector<vector<Vec4i> > left_right_lines)
 	int LLowerX[left.size()];
 	int LLowerY[left.size()];
 
+	right_lane_exist = left_lane_exist = false;
 
 	Vec4i right_final, left_final;
+
 	if(right.size())
 	{	
+		right_lane_exist = true;
 		for( size_t i = 0; i < right.size(); i++ )
 		{
 			Vec4i l = right[i];
@@ -312,10 +325,11 @@ Mat PlotLines2( Mat frame, vector<vector<Vec4i> > left_right_lines)
 		right_final[2] = (int)average(LowerX, right.size());
 		right_final[3] = (int)average(LowerY, right.size());
 	
-		line(Output, Point(right_final[0], right_final[1]), Point(right_final[2], right_final[3]), Scalar(0,0,255), 3, CV_AA);	
+		//line(Output, Point(right_final[0], right_final[1]), Point(right_final[2], right_final[3]), Scalar(0,0,255), 3, CV_AA);	
 	}
 	if(left.size())
 	{
+		left_lane_exist = true;
 		for( size_t i = 0; i < left.size(); i++ )
 		{
 			Vec4i l = left[i];
@@ -335,10 +349,14 @@ Mat PlotLines2( Mat frame, vector<vector<Vec4i> > left_right_lines)
 			left_final[2] = average(LLowerX, left.size());
 			left_final[3] = average(LLowerY, left.size());
 		
-		line(Output, Point(left_final[0], left_final[1]), Point(left_final[2], left_final[3]), Scalar(0,0,255), 3, CV_AA);
+		//line(Output, Point(left_final[0], left_final[1]), Point(left_final[2], left_final[3]), Scalar(0,0,255), 3, CV_AA);
 	}	
-	vector<Point> output(4);
 
+	lanes.left_lane_pts = left_final;
+	lanes.right_lane_pts = right_final;
+	lanes.right_lane = right_lane_exist;
+	lanes.left_lane = left_lane_exist;
+	
+	return lanes;
 
-	return Output;
 }
