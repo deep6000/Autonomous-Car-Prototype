@@ -17,7 +17,7 @@ bool right_lane , left_lane;
 void* lane_detection(void* threadargs)
 {
 
-	Mat frame,frame_half,framebr,HLS,HSV,yellow,white,denoise,edge,lanes, lane_detect,roi_mask;
+	Mat frame,HLS,HSV,yellow,white,denoise,edge,lanes, lane_detect,roi_mask;
 
 	vector<vector<Vec4i>> left_right_lines;
 	std::vector<cv::Point> lane;
@@ -60,20 +60,13 @@ void* lane_detection(void* threadargs)
 		
 		AND_Frames(edge, roi_mask, edge);
 		//imshow("Edge", edge);
+
 		vector<Vec4i> lines;
-
-
-		HoughLinesP(edge, lines, 1, CV_PI/180, 40, 10, 100);
-	
+		HOUGH_LINES(edge,lines);
 		
 		left_right_lines = LaneSeperation(lines, edge);
-	
-	//	lane = AverageLines(left_right_lines, edge);
-
-		//frame = PlotLines(frame,lane);
 
 		//add semaphores here
-
 		frame_locs.lane = GetLinesCordinates(frame,left_right_lines);
 		
 	}

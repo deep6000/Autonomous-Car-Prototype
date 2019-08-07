@@ -18,4 +18,27 @@ using namespace cv;
 using namespace std;
 
 
+/**
+ * @brief  Vehicle Detect callback function
+ * 
+ * @param threadargs 
+ * @return void* 
+ */
+void* vehicle_detect(void* threadargs);
+
+/**
+ * @brief Loading car cascade 
+ * 
+ * @param cascade_name 
+ * @return uint8_t 
+ */
+uint8_t LoadCascade(String cascade_name);
+
+/**
+ * @brief Get the Vehicle Coordinates object
+ * 
+ * @param frame 
+ * @return vector<Rect> 
+ */
+vector<Rect> GetVehicleCoordinates(Mat frame);
 #endif /* VEHICLE_DETECT_H */

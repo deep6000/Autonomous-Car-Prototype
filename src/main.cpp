@@ -12,21 +12,37 @@
 
 #include "main.h"
 #include "lane_detection.h"
+#include "vehicle_detect.h"
 
 Mat Cap_frame;
+
 FramePts frame_locs;
+
+String car_cascade_name = "../cars.xml";
+
+
 
 int main(int argc, char** argv)
 {
 
-    VideoCapture cap("/home/deepesh/Examples_OpenCV/project/input.AVI");
-     cap >> Cap_frame;
+    VideoCapture cap(argv[1]);
+     
      if(!cap.isOpened())
     {
         cout << "Error opening input video stream or file" << endl;
         return -1;
     }
 
+    if(LoadCascade(car_cascade_name))
+    {
+        cout<< "Error opening Cascade Classifier"<<endl; 
+    }
+
+
+    cap >> Cap_frame;
+
+    
+    
     for(int core = 0; core < NUM_OF_CORES; core ++)
         CPU_ZERO(&cpuset[core]);
 
@@ -39,6 +55,8 @@ int main(int argc, char** argv)
     }
     
     pthread_create(&threads[0],(pthread_attr_t*)(&sched_attr[0]),lane_detection ,(void *) &(threadargs[0]));
+    pthread_create(&threads[1],(pthread_attr_t*)(&sched_attr[1]),vehicle_detect ,(void *) &(threadargs[1]));
+
 
 
     while(1)
@@ -50,16 +68,18 @@ int main(int argc, char** argv)
             cout<<"Empty"<<endl;
         }
 
-        char k = waitKey(10);
+        char k = waitKey(1);
         if(k == 27)
             break;
 
         DetectLanes();
- 
+        DetectCars();
 
         imshow("Output",Cap_frame);
 
     }
+    for(int i=0;i<NUM_OF_THREADS;i++)
+		pthread_join(threads[i], NULL);
 }
 
 
@@ -80,4 +100,14 @@ void DetectLanes()
             line(Cap_frame, Point(right_lane[0], right_lane[1]), Point(right_lane[2], right_lane[3]), Scalar(0,0,255), 3, CV_AA);
         } 
         
+}
+
+void DetectCars()
+{
+    for(size_t i = 0; i< frame_locs.car_cord.size(); i++)
+    {
+        rectangle(Cap_frame,frame_locs.car_cord[i],Scalar(255,0,255), 2, 8, 0);
+    
+    }
+
 }

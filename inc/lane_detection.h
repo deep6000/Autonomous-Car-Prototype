@@ -35,6 +35,7 @@ using namespace std;
 #define OR_Frames(frame1, frame2,output)		bitwise_or(frame1, frame2, output);
 #define AND_Frames(frame1, frame2,output)		bitwise_and(frame1, frame2, output);
 
+#define HOUGH_LINES(input,output)                HoughLinesP(input, output, 1, CV_PI/180, 40, 10, 100);
 
 
 /**

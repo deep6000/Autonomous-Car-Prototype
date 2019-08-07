@@ -48,5 +48,11 @@ ThreadArgs_t threadargs[NUM_OF_THREADS];
  */
 void DetectLanes();
 
+/**
+ * @brief Detect Cars and draw boxes
+ * 
+ */
+void DetectCars();
+
 
 #endif /* MAIN_H */

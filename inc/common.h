@@ -17,6 +17,7 @@
 using namespace cv;
 using namespace std;
 
+
 typedef struct Lane_Cordinates
 {
     Vec4i right_lane_pts;
@@ -25,14 +26,17 @@ typedef struct Lane_Cordinates
     bool left_lane;
 }Lane_Cordinates;
 
+
 typedef struct FramePts
 {
   Lane_Cordinates lane;
+  vector<Rect> car_cord;
 } FramePts;
-
 
 extern Mat Cap_frame;
 
 extern FramePts frame_locs;
+
+extern CascadeClassifier car_cascade;
 
 #endif
