@@ -23,7 +23,7 @@ void* lane_detection(void* threadargs)
 	std::vector<cv::Point> lane;
 	Point l; 
 	
-	while(1)
+	while(command == RUN)
 	{
 		//frame = imread(argv[1]);
 		frame = Cap_frame.clone();
@@ -33,16 +33,18 @@ void* lane_detection(void* threadargs)
 		
 		ConvertRGB2HLS(frame,HLS);
 		//imshow("HLS",HLS);
-
+		//imwrite("HLS.png",HLS);
 		
 		ConvertRGB2HSV(frame, HSV);
-		
+		//imwrite("HSV.png",HSV);
 		//imshow("HSV",HSV);
 		
 		ExtractWhite(HLS,white);
+		//imwrite("white.png",white);
 		//imshow("white",white);
 
 		ExtractYellow(HSV,yellow)	
+		
 		//imshow("HLSyellow",yellow);
 		
 		OR_Frames(white, yellow, lanes);
@@ -68,8 +70,11 @@ void* lane_detection(void* threadargs)
 
 		//add semaphores here
 		frame_locs.lane = GetLinesCordinates(frame,left_right_lines);
-		
+			
 	}
+	cout<<"Exiting Lane Detection"<<endl;
+	pthread_exit(NULL);
+
 }
 
 double average(int a[], int n) 

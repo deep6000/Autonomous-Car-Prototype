@@ -13,10 +13,13 @@
 #include "main.h"
 #include "lane_detection.h"
 #include "vehicle_detect.h"
+#include "time_cal.h"
 
 Mat Cap_frame;
 
 FramePts frame_locs;
+
+Status command;
 
 String car_cascade_name = "../cars.xml";
 
@@ -24,8 +27,11 @@ String car_cascade_name = "../cars.xml";
 
 int main(int argc, char** argv)
 {
-
+    command = RUN;
+    struct timespec start, finish, diff;
+    unsigned int framecount = 0 ;
     VideoCapture cap(argv[1]);
+
      
      if(!cap.isOpened())
     {
@@ -38,10 +44,9 @@ int main(int argc, char** argv)
         cout<< "Error opening Cascade Classifier"<<endl; 
     }
 
-
+    // Cap_frame = imread(argv[1]);
     cap >> Cap_frame;
-
-    
+  
     
     for(int core = 0; core < NUM_OF_CORES; core ++)
         CPU_ZERO(&cpuset[core]);
@@ -58,28 +63,39 @@ int main(int argc, char** argv)
     pthread_create(&threads[1],(pthread_attr_t*)(&sched_attr[1]),vehicle_detect ,(void *) &(threadargs[1]));
 
 
-
-    while(1)
+    clock_gettime(CLOCK_REALTIME, &start);
+    while(command == RUN)
     {
-
+        
         cap >> Cap_frame;
         if(Cap_frame.empty())
         {
-            cout<<"Empty"<<endl;
+           break;
         }
-
+        framecount++;
         char k = waitKey(1);
         if(k == 27)
-            break;
+           break;
 
+        //insert semaphores here
         DetectLanes();
         DetectCars();
 
         imshow("Output",Cap_frame);
 
+
     }
+    clock_gettime(CLOCK_REALTIME, &finish);
+    destroyAllWindows();
+    command = STOP;
     for(int i=0;i<NUM_OF_THREADS;i++)
 		pthread_join(threads[i], NULL);
+
+    delta_t(&finish,&start,&diff);
+    printf("Total Time spent is %ld\n", diff.tv_sec);
+    printf("Total Frames Processed %d \n",framecount);
+    double frame_rate = framecount/(diff.tv_sec);
+     printf("Frame Rate = %d\n",(int)frame_rate);
 }
 
 

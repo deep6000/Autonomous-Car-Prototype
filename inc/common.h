@@ -33,6 +33,14 @@ typedef struct FramePts
   vector<Rect> car_cord;
 } FramePts;
 
+typedef enum Status
+{
+    STOP,
+    RUN
+}Status;
+
+extern Status command;
+
 extern Mat Cap_frame;
 
 extern FramePts frame_locs;

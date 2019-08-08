@@ -9,7 +9,15 @@
 #include <time.h>
 
 
-
+/**
+ * This code is reffered from Prof Sam Siewert in seqgen.c
+ * @brief To find difference between two time instants
+ * 
+ * @param stop 
+ * @param start 
+ * @param delta_t 
+ * @return int 
+ */
 int delta_t(struct timespec *stop, struct timespec *start, struct timespec *delta_t)
 {
 	int dt_sec=stop->tv_sec - start->tv_sec;

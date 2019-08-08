@@ -16,11 +16,16 @@ CascadeClassifier car_cascade;
 
 void* vehicle_detect(void* threadargs)
 {
-    while(1)
+    while(command == RUN)
     {
     Mat frame = Cap_frame.clone();
     frame_locs.car_cord = GetVehicleCoordinates(frame);
+    if(command == STOP)
+        break;
     }
+    	cout<<"Exiting Vehicle Detection"<<endl;
+        pthread_exit(NULL);
+
 }
 
 uint8_t LoadCascade(String cascade_name)

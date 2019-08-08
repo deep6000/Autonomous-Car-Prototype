@@ -17,9 +17,10 @@
 #include <sys/sysinfo.h>
 #include <time.h>
 #include <signal.h>
+#include <signal.h>
+#include <semaphore.h>
+
 #include "common.h"
-
-
 
 
 using namespace cv;
@@ -27,6 +28,10 @@ using namespace std;
 
 #define NUM_OF_CORES        (2)
 #define NUM_OF_THREADS      (2)
+
+#define NSECS2SECS          (1000000000)
+
+
 
 cpu_set_t cpuset[NUM_OF_CORES];
 
@@ -40,6 +45,10 @@ typedef struct ThreadArgs
 }ThreadArgs_t;
 
 ThreadArgs_t threadargs[NUM_OF_THREADS];
+
+
+sem_t sem_lane,sem_vehicle, sem_ped;
+
 
 
 /**
