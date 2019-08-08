@@ -51,7 +51,7 @@ vector<Rect> GetVehicleCoordinates(Mat frame);
  * @param factor 
  * @return Mat 
  */
-Mat Cropframe(Mat input, uint8_t factor);
+Mat Cropframe(Mat input);
 
 
 #endif /* VEHICLE_DETECT_H */

@@ -18,7 +18,7 @@ sem_t sem_lane;
 void* lane_detection(void* threadargs)
 {
 
-	Mat frame,HLS,HSV,yellow,white,denoise,edge,lanes, lane_detect,roi_mask;
+	Mat input,frame,HLS,HSV,yellow,white,denoise,edge,lanes, lane_detect,roi_mask;
 
 	vector<vector<Vec4i>> left_right_lines;
 	std::vector<cv::Point> lane;
@@ -27,8 +27,8 @@ void* lane_detection(void* threadargs)
 	while(command == RUN)
 	{
 		//frame = imread(argv[1]);
-		frame = Cap_frame.clone();
-
+		input = Cap_frame.clone();
+		frame = input( Rect( 0, input.rows/2, input.cols, input.rows*0.5));
 	
 		//imwrite("test.png",frame);
 		
@@ -115,11 +115,11 @@ Mat CreateROImask(Mat input)
 		int sides = 4;
 		mask = Mat::zeros(Size(input.cols, input.rows), CV_8U);
 		//Points for ROI mask
-		mask_pts[0][0] = Point(input.cols*0.4,input.rows* 0.6);					
-		mask_pts[0][1] = Point(input.cols*0.3, input.rows*0.8);
+		mask_pts[0][0] = Point(input.cols*0.4,input.rows* 0.3);					
+		mask_pts[0][1] = Point(input.cols*0.2, input.rows*0.6);
 		//mask_pts[0][2] = Point(0, input.rows);						
-		mask_pts[0][2] = Point(input.cols*0.8, input.rows*0.8);	
-		mask_pts[0][3] = Point(input.cols*0.5, input.rows*0.6);					
+		mask_pts[0][2] = Point(input.cols*0.8, input.rows*0.6);	
+		mask_pts[0][3] = Point(input.cols*0.56, input.rows*0.3);					
 		const Point* pts_list[1] = {mask_pts[0]};
 		fillPoly(mask, pts_list, &sides, 1, 255, 8);
 		return mask;

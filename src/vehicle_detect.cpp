@@ -20,7 +20,7 @@ void* vehicle_detect(void* threadargs)
     while(command == RUN)
     {
     Mat frame = Cap_frame.clone();
-    frame = Cropframe(frame,2);
+    frame = Cropframe(frame);
     frame_locs.car_cord = GetVehicleCoordinates(frame);
     if(command == STOP)
         break;
@@ -49,9 +49,9 @@ vector<Rect> GetVehicleCoordinates(Mat frame)
     return detected_cars;
 }
 
-Mat Cropframe(Mat input, uint8_t factor)
+Mat Cropframe(Mat input)
 {
 	Mat result;
-	result = input( Rect( 0, input.rows/factor, input.cols, input.rows/factor));
+	result = input( Rect( 0, input.rows/2, input.cols, input.rows*0.33));
 	return result;
 }

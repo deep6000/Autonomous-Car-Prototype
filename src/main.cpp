@@ -40,7 +40,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    if(LoadCascade(car_cascade_name))
+    if(!(LoadCascade(car_cascade_name)))
     {
         cout<< "Error opening Cascade Classifier"<<endl; 
     }
@@ -70,9 +70,8 @@ int main(int argc, char** argv)
         
         cap >> Cap_frame;
         if(Cap_frame.empty())
-        {
-           break;
-        }
+              break;
+    
         framecount++;
         char k = waitKey(1);
         if(k == 27)
@@ -108,13 +107,17 @@ void DetectLanes()
         if(frame_locs.lane.left_lane)
         {
             Vec4i left_final = frame_locs.lane.left_lane_pts;
+            left_final[1] += Cap_frame.rows*0.5;
+            left_final[3] += Cap_frame.rows*0.5;
             line(Cap_frame, Point(left_final[0], left_final[1]), Point(left_final[2], left_final[3]), Scalar(0,0,255), 3, CV_AA);
         }
        
         if(frame_locs.lane.right_lane)
         {
-            Vec4i right_lane = frame_locs.lane.right_lane_pts;
-            line(Cap_frame, Point(right_lane[0], right_lane[1]), Point(right_lane[2], right_lane[3]), Scalar(0,0,255), 3, CV_AA);
+            Vec4i right_final = frame_locs.lane.right_lane_pts;
+            right_final[1] += Cap_frame.rows*0.5;
+            right_final[3] += Cap_frame.rows*0.5;
+            line(Cap_frame, Point(right_final[0], right_final[1]), Point(right_final[2], right_final[3]), Scalar(0,0,255), 3, CV_AA);
         } 
         
 }
