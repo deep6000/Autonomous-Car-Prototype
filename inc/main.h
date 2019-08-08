@@ -47,8 +47,6 @@ typedef struct ThreadArgs
 ThreadArgs_t threadargs[NUM_OF_THREADS];
 
 
-sem_t sem_lane,sem_vehicle, sem_ped;
-
 
 
 /**
@@ -63,5 +61,6 @@ void DetectLanes();
  */
 void DetectCars();
 
-
+void CreateSemaphores();
+void DestroySemaphores();
 #endif /* MAIN_H */

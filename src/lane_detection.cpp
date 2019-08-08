@@ -13,6 +13,7 @@
 double right_m, left_m;
 Point right_b,left_b;
 bool right_lane , left_lane;
+sem_t sem_lane;
 
 void* lane_detection(void* threadargs)
 {
@@ -70,7 +71,7 @@ void* lane_detection(void* threadargs)
 
 		//add semaphores here
 		frame_locs.lane = GetLinesCordinates(frame,left_right_lines);
-			
+		sem_post(&sem_lane);		
 	}
 	cout<<"Exiting Lane Detection"<<endl;
 	pthread_exit(NULL);

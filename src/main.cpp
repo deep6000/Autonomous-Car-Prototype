@@ -22,6 +22,7 @@ FramePts frame_locs;
 Status command;
 
 String car_cascade_name = "../cars.xml";
+sem_t sem_main;
 
 
 
@@ -43,7 +44,7 @@ int main(int argc, char** argv)
     {
         cout<< "Error opening Cascade Classifier"<<endl; 
     }
-
+     CreateSemaphores();
     // Cap_frame = imread(argv[1]);
     cap >> Cap_frame;
   
@@ -76,9 +77,9 @@ int main(int argc, char** argv)
         char k = waitKey(1);
         if(k == 27)
            break;
-
-        //insert semaphores here
+        sem_wait(&sem_lane);
         DetectLanes();
+        sem_wait(&sem_vehicle);
         DetectCars();
 
         imshow("Output",Cap_frame);
@@ -90,7 +91,7 @@ int main(int argc, char** argv)
     command = STOP;
     for(int i=0;i<NUM_OF_THREADS;i++)
 		pthread_join(threads[i], NULL);
-
+    DestroySemaphores();
     delta_t(&finish,&start,&diff);
     printf("Total Time spent is %ld\n", diff.tv_sec);
     printf("Total Frames Processed %d \n",framecount);
@@ -126,4 +127,26 @@ void DetectCars()
     
     }
 
+}
+
+void CreateSemaphores()
+{
+    if(sem_init(&sem_main, 0, 0) == -1)
+        printf("Error seminit\n");
+
+    if(sem_init(&sem_lane, 0, 0) == -1)
+        printf("Error seminit\n");
+
+    if(sem_init(&sem_ped, 0, 0) == -1)
+        printf("Error seminit\n");
+
+    if(sem_init(&sem_vehicle, 0, 0) == -1)
+        printf("Error seminit\n");
+}
+
+void DestroySemaphores()
+{
+    sem_destroy(&sem_main);
+    sem_destroy(&sem_ped);
+    sem_destroy(&sem_vehicle);
 }

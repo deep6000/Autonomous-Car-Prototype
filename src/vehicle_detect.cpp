@@ -13,6 +13,7 @@
 
 
 CascadeClassifier car_cascade;
+sem_t sem_vehicle,sem_ped;
 
 void* vehicle_detect(void* threadargs)
 {
@@ -22,6 +23,7 @@ void* vehicle_detect(void* threadargs)
     frame_locs.car_cord = GetVehicleCoordinates(frame);
     if(command == STOP)
         break;
+    sem_post(&sem_vehicle);
     }
     	cout<<"Exiting Vehicle Detection"<<endl;
         pthread_exit(NULL);

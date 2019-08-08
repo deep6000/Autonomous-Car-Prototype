@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <string>
+#include<semaphore.h>
 
 
 #include <opencv2/core/core.hpp>
@@ -46,5 +47,7 @@ extern Mat Cap_frame;
 extern FramePts frame_locs;
 
 extern CascadeClassifier car_cascade;
+
+extern sem_t sem_main, sem_lane,sem_vehicle, sem_ped;
 
 #endif
