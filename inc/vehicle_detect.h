@@ -41,4 +41,17 @@ uint8_t LoadCascade(String cascade_name);
  * @return vector<Rect> 
  */
 vector<Rect> GetVehicleCoordinates(Mat frame);
+
+
+
+/**
+ * @brief  Crop image which you don't need
+ * 
+ * @param input 
+ * @param factor 
+ * @return Mat 
+ */
+Mat Cropframe(Mat input, uint8_t factor);
+
+
 #endif /* VEHICLE_DETECT_H */

@@ -123,7 +123,9 @@ void DetectCars()
 {
     for(size_t i = 0; i< frame_locs.car_cord.size(); i++)
     {
-        rectangle(Cap_frame,frame_locs.car_cord[i],Scalar(255,0,255), 2, 8, 0);
+        Rect r = frame_locs.car_cord[i];
+        r.y = r.y+ (0.5* Cap_frame.rows);
+        rectangle(Cap_frame,r,Scalar(255,0,255), 2, 8, 0);
     
     }
 

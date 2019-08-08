@@ -56,14 +56,6 @@ void* lane_detection(void* threadargs);
 
 double average(int a[], int n);
 
-/**
- * @brief  Crop image which you don't need
- * 
- * @param input 
- * @param factor 
- * @return Mat 
- */
-Mat Cropframe(Mat input, uint8_t factor);
 
 /**
  * @brief  Remove noise from the image

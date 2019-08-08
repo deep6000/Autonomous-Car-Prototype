@@ -89,12 +89,7 @@ double average(int a[], int n)
 } 
 
 
-Mat Cropframe(Mat input, uint8_t factor)
-{
-	Mat result;
-	result = input( Rect( 0, input.rows/factor, input.cols, input.rows/factor));
-	return result;
-}
+
 
 
 Mat DenoiseFrame(Mat input, uint8_t kernel_size)
