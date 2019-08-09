@@ -14,6 +14,7 @@
 #include "lane_detection.h"
 #include "vehicle_detect.h"
 #include "time_cal.h"
+#include "errno.h"
 
 Mat Cap_frame;
 
@@ -35,13 +36,7 @@ int main(int argc, char** argv)
     unsigned int framecount = 0 ;
 
     int scope;
-	pthread_attr_getscope(&main_attr, &scope);
- 	if(scope == PTHREAD_SCOPE_SYSTEM)
-    		printf("PTHREAD SCOPE SYSTEM\n");
-  	else if (scope == PTHREAD_SCOPE_PROCESS)
-    		printf("PTHREAD SCOPE PROCESS\n");
-	else
-	    	printf("PTHREAD SCOPE UNKNOWN\n");
+
 
     VideoCapture cap(argv[1]);
      if(!cap.isOpened())
@@ -58,8 +53,6 @@ int main(int argc, char** argv)
     
      CreateSemaphores();
     // Cap_frame = imread(argv[1]);
-    cap >> Cap_frame;
-  
     
     // for(int core = 0; core < NUM_OF_CORES; core ++)
     //     CPU_ZERO(&cpuset[core]);
@@ -74,17 +67,31 @@ int main(int argc, char** argv)
 
 
 
+    main_pid = getpid();
     max_prio = sched_get_priority_max(SCHED_FIFO);
 	min_prio = sched_get_priority_min(SCHED_FIFO);
 
-    struct sched_param main;
-	main.sched_priority = max_prio;
-	int ret = sched_setscheduler(getpid(), SCHED_FIFO, &main);
+    cout<<"max_prior"<<max_prio;
+    cout<<"min prior"<<min_prio;
+
+    int rc = sched_getparam(main_pid, &main_param);
+    main_param.sched_priority = max_prio-10;
+
+	int ret = sched_setscheduler(getpid(), SCHED_FIFO, &main_param);
 	if (ret < 0) 
 	{
-		printf("Unsuccessful in setting thread realtime prio\n");
+		printf("Unsuccessful in setting thread realtime prio %s \n",strerror(errno));
 		return 1;     
 	}
+    
+    pthread_attr_getscope(&main_attr, &scope);
+ 	if(scope == PTHREAD_SCOPE_SYSTEM)
+    		printf("PTHREAD SCOPE SYSTEM\n");
+  	else if (scope == PTHREAD_SCOPE_PROCESS)
+    		printf("PTHREAD SCOPE PROCESS\n");
+	else
+	    	printf("PTHREAD SCOPE UNKNOWN\n");
+
 
     for(int i = 0 ; i < NUM_OF_THREADS; i++)
     {
@@ -94,26 +101,26 @@ int main(int argc, char** argv)
 	    pthread_attr_setscope(&sched_attr[i], PTHREAD_SCOPE_SYSTEM);
     }
 
-    rt_param[0].sched_priority = max_prio -1;
+    rt_param[0].sched_priority = max_prio-20;
     pthread_attr_setschedparam(&sched_attr[0], &rt_param[0]);
 
-    rt_param[1].sched_priority = max_prio -2;
+    rt_param[1].sched_priority = max_prio-30;
     pthread_attr_setschedparam(&sched_attr[1], &rt_param[1]);
-
-    pthread_create(&threads[0],(pthread_attr_t*)(&sched_attr[0]),lane_detection ,(void *) &(threadargs[0]));
-    pthread_create(&threads[1],(pthread_attr_t*)(&sched_attr[1]),vehicle_detect ,(void *) &(threadargs[1]));
+      cap >> Cap_frame;
+     pthread_create(&threads[0],(pthread_attr_t*)(&sched_attr[0]),lane_detection ,(void *) &(threadargs[0]));
+     pthread_create(&threads[1],(pthread_attr_t*)(&sched_attr[1]),vehicle_detect ,(void *) &(threadargs[1]));
 
 
     clock_gettime(CLOCK_REALTIME, &start);
     while(command == RUN)
     {
-        
+    
         cap >> Cap_frame;
         if(Cap_frame.empty())
               break;
     
         framecount++;
-        char k = waitKey(1);
+        char k = waitKey(15);
         if(k == 27)
            break;
         sem_wait(&sem_lane);
@@ -130,6 +137,7 @@ int main(int argc, char** argv)
     command = STOP;
     for(int i=0;i<NUM_OF_THREADS;i++)
 		pthread_join(threads[i], NULL);
+    sem_post(&sem_lane);
     DestroySemaphores();
     delta_t(&finish,&start,&diff);
     printf("Total Time spent is %ld\n", diff.tv_sec);

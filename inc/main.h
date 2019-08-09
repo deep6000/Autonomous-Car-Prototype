@@ -27,7 +27,7 @@ using namespace cv;
 using namespace std;
 
 #define NUM_OF_CORES        (2)
-#define NUM_OF_THREADS      (2)
+#define NUM_OF_THREADS      (1)
 
 #define NSECS2SECS          (1000000000)
 
@@ -41,6 +41,8 @@ pthread_attr_t main_attr;
 int max_prio, min_prio;
 struct sched_param rt_param[NUM_OF_THREADS];
 int rt_protocol;
+pid_t main_pid;
+struct sched_param main_param;
 
 
 typedef struct ThreadArgs

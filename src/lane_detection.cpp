@@ -18,6 +18,7 @@ sem_t sem_lane;
 void* lane_detection(void* threadargs)
 {
 
+
 	Mat input,frame,HLS,HSV,yellow,white,denoise,edge,lanes, lane_detect,roi_mask;
 
 	vector<vector<Vec4i>> left_right_lines;
@@ -26,6 +27,7 @@ void* lane_detection(void* threadargs)
 	
 	while(command == RUN)
 	{
+	
 		//frame = imread(argv[1]);
 		input = Cap_frame.clone();
 		frame = input( Rect( 0, input.rows/2, input.cols, input.rows*0.5));
@@ -71,7 +73,8 @@ void* lane_detection(void* threadargs)
 
 		//add semaphores here
 		frame_locs.lane = GetLinesCordinates(frame,left_right_lines);
-		sem_post(&sem_lane);		
+		sem_post(&sem_lane);	
+	
 	}
 	cout<<"Exiting Lane Detection"<<endl;
 	pthread_exit(NULL);
