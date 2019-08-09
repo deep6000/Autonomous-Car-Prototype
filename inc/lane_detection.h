@@ -25,9 +25,6 @@ using namespace std;
 #define CANNY_MAX_THRES							(140)
 #define SLOPE_THRES								(0.5)
 
-#define ConvertRGB2HLS(input,output) 			cvtColor(input, output, COLOR_BGR2HLS);
-#define ConvertRGB2HSV(input,output) 			cvtColor(input, output, COLOR_BGR2HSV);
-#define ConvertRGB2GRAY(input,output) 			cvtColor(input, output, COLOR_BGR2GRAY);
 
 #define ExtractWhite(HSL, white)				inRange(HSL, Scalar(20,100,0), Scalar(40,255,50), white);
 #define ExtractYellow(HSV, yellow)				inRange(HSV, Scalar(20,90,100), Scalar(40,255,150), yellow);

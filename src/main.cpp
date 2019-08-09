@@ -21,7 +21,9 @@ FramePts frame_locs;
 
 Status command;
 
-String car_cascade_name = "../cars.xml";
+//https://github.com/abhi-kumar/CAR-DETECTION
+//https://github.com/anhydrous99/CarDetection
+String car_cascade_name = "../cascade2.xml";
 sem_t sem_main;
 
 
@@ -40,10 +42,12 @@ int main(int argc, char** argv)
         return -1;
     }
 
+    car_cascade_name = string(argv[2]);
     if(!(LoadCascade(car_cascade_name)))
     {
         cout<< "Error opening Cascade Classifier"<<endl; 
     }
+    
      CreateSemaphores();
     // Cap_frame = imread(argv[1]);
     cap >> Cap_frame;
@@ -127,7 +131,7 @@ void DetectCars()
     for(size_t i = 0; i< frame_locs.car_cord.size(); i++)
     {
         Rect r = frame_locs.car_cord[i];
-        r.y = r.y+ (0.5* Cap_frame.rows);
+        r.y = r.y+ (0.4* Cap_frame.rows);
         rectangle(Cap_frame,r,Scalar(255,0,255), 2, 8, 0);
     
     }
@@ -140,7 +144,7 @@ void CreateSemaphores()
         printf("Error seminit\n");
 
     if(sem_init(&sem_lane, 0, 0) == -1)
-        printf("Error seminit\n");
+        printf("Error seminit\n"); 
 
     if(sem_init(&sem_ped, 0, 0) == -1)
         printf("Error seminit\n");

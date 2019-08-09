@@ -17,10 +17,12 @@ sem_t sem_vehicle,sem_ped;
 
 void* vehicle_detect(void* threadargs)
 {
+    Mat frame , gray;
     while(command == RUN)
     {
-    Mat frame = Cap_frame.clone();
+    frame = Cap_frame.clone();
     frame = Cropframe(frame);
+  //  ConvertRGB2GRAY(frame,gray);
     frame_locs.car_cord = GetVehicleCoordinates(frame);
     if(command == STOP)
         break;
@@ -52,6 +54,6 @@ vector<Rect> GetVehicleCoordinates(Mat frame)
 Mat Cropframe(Mat input)
 {
 	Mat result;
-	result = input( Rect( 0, input.rows/2, input.cols, input.rows*0.33));
+	result = input( Rect( 0, input.rows*0.4, input.cols, input.rows*0.33));
 	return result;
 }

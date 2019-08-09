@@ -18,6 +18,10 @@
 using namespace cv;
 using namespace std;
 
+#define ConvertRGB2HLS(input,output) 			cvtColor(input, output, COLOR_BGR2HLS);
+#define ConvertRGB2HSV(input,output) 			cvtColor(input, output, COLOR_BGR2HSV);
+#define ConvertRGB2GRAY(input,output) 			cvtColor(input, output, COLOR_BGR2GRAY);
+
 
 typedef struct Lane_Cordinates
 {
