@@ -37,6 +37,10 @@ cpu_set_t cpuset[NUM_OF_CORES];
 
 pthread_t threads[NUM_OF_THREADS];
 pthread_attr_t sched_attr[NUM_OF_THREADS];
+pthread_attr_t main_attr;
+int max_prio, min_prio;
+struct sched_param rt_param[NUM_OF_THREADS];
+int rt_protocol;
 
 
 typedef struct ThreadArgs

@@ -33,9 +33,17 @@ int main(int argc, char** argv)
     command = RUN;
     struct timespec start, finish, diff;
     unsigned int framecount = 0 ;
-    VideoCapture cap(argv[1]);
 
-     
+    int scope;
+	pthread_attr_getscope(&main_attr, &scope);
+ 	if(scope == PTHREAD_SCOPE_SYSTEM)
+    		printf("PTHREAD SCOPE SYSTEM\n");
+  	else if (scope == PTHREAD_SCOPE_PROCESS)
+    		printf("PTHREAD SCOPE PROCESS\n");
+	else
+	    	printf("PTHREAD SCOPE UNKNOWN\n");
+
+    VideoCapture cap(argv[1]);
      if(!cap.isOpened())
     {
         cout << "Error opening input video stream or file" << endl;
@@ -53,17 +61,45 @@ int main(int argc, char** argv)
     cap >> Cap_frame;
   
     
-    for(int core = 0; core < NUM_OF_CORES; core ++)
-        CPU_ZERO(&cpuset[core]);
+    // for(int core = 0; core < NUM_OF_CORES; core ++)
+    //     CPU_ZERO(&cpuset[core]);
 
-    for(int core = 0 ; core< NUM_OF_CORES; core++)
-    {
-        CPU_SET(core, &cpuset[core]);
-        pthread_attr_init(&sched_attr[core]);
-        pthread_attr_setaffinity_np(&sched_attr[core],sizeof(cpuset[core]), &cpuset[core]);
+    // for(int core = 0 ; core< NUM_OF_CORES; core++)
+    // {
+    //     CPU_SET(core, &cpuset[core]);
+    //     pthread_attr_init(&sched_attr[core]);
+    //     pthread_attr_setaffinity_np(&sched_attr[core],sizeof(cpuset[core]), &cpuset[core]);
         
+    // }
+
+
+
+    max_prio = sched_get_priority_max(SCHED_FIFO);
+	min_prio = sched_get_priority_min(SCHED_FIFO);
+
+    struct sched_param main;
+	main.sched_priority = max_prio;
+	int ret = sched_setscheduler(getpid(), SCHED_FIFO, &main);
+	if (ret < 0) 
+	{
+		printf("Unsuccessful in setting thread realtime prio\n");
+		return 1;     
+	}
+
+    for(int i = 0 ; i < NUM_OF_THREADS; i++)
+    {
+        pthread_attr_init(&sched_attr[i]);
+	    pthread_attr_setinheritsched(&sched_attr[i], PTHREAD_EXPLICIT_SCHED);
+	    pthread_attr_setschedpolicy(&sched_attr[i], SCHED_FIFO);
+	    pthread_attr_setscope(&sched_attr[i], PTHREAD_SCOPE_SYSTEM);
     }
-    
+
+    rt_param[0].sched_priority = max_prio -1;
+    pthread_attr_setschedparam(&sched_attr[0], &rt_param[0]);
+
+    rt_param[1].sched_priority = max_prio -2;
+    pthread_attr_setschedparam(&sched_attr[1], &rt_param[1]);
+
     pthread_create(&threads[0],(pthread_attr_t*)(&sched_attr[0]),lane_detection ,(void *) &(threadargs[0]));
     pthread_create(&threads[1],(pthread_attr_t*)(&sched_attr[1]),vehicle_detect ,(void *) &(threadargs[1]));
 
