@@ -13,20 +13,25 @@
 
 
 CascadeClassifier car_cascade;
-sem_t sem_vehicle,sem_ped;
+sem_t sem_vehicle;
 
 void* vehicle_detect(void* threadargs)
 {
     Mat frame , gray;
+ 
     while(command == RUN)
     {
+    sem_wait(&sem_vehicle);
+   // cout<<"vehicle started"<<endl;
     frame = Cap_frame.clone();
     frame = Cropframe(frame);
-  //  ConvertRGB2GRAY(frame,gray);
-    frame_locs.car_cord = GetVehicleCoordinates(frame);
+    imwrite("signal.png",frame);
+   ConvertRGB2GRAY(frame,gray);
+    frame_locs.car_cord = GetVehicleCoordinates(gray);
     if(command == STOP)
         break;
-    sem_post(&sem_vehicle);
+    //sem_post(&sem_vehicle);
+    //cout<<"leaving vehicle"<<endl;
     }
     	cout<<"Exiting Vehicle Detection"<<endl;
         pthread_exit(NULL);

@@ -20,14 +20,16 @@ void* lane_detection(void* threadargs)
 
 
 	Mat input,frame,HLS,HSV,yellow,white,denoise,edge,lanes, lane_detect,roi_mask;
-
+	cout<<"lane entered"<<endl;
 	vector<vector<Vec4i>> left_right_lines;
-	std::vector<cv::Point> lane;
+	vector<Point> lane(4);
 	Point l; 
 	
 	while(command == RUN)
 	{
-	
+		
+		sem_wait(&sem_lane);
+
 		//frame = imread(argv[1]);
 		input = Cap_frame.clone();
 		frame = input( Rect( 0, input.rows/2, input.cols, input.rows*0.5));
@@ -70,11 +72,10 @@ void* lane_detection(void* threadargs)
 		HOUGH_LINES(edge,lines);
 		
 		left_right_lines = LaneSeperation(lines, edge);
-
+		
 		//add semaphores here
 		frame_locs.lane = GetLinesCordinates(frame,left_right_lines);
-		sem_post(&sem_lane);	
-	
+
 	}
 	cout<<"Exiting Lane Detection"<<endl;
 	pthread_exit(NULL);
@@ -156,7 +157,7 @@ vector<vector<Vec4i>> LaneSeperation(vector <Vec4i> lines, Mat frame)
 	{
 		Vec4i l = lines[i];
 
-		slope = (l[3]-l[1])/((double)(l[2]-l[0]));				//calculate slope to remove almost horizontal lines from this list
+		slope = (l[3]-l[1])/((double)(l[2]-l[0]));				
 		if(slope>0.5 || slope<(-0.5))	
 		{
 			
@@ -251,13 +252,13 @@ Mat PlotLines(Mat inputImage, vector<Point> lane)
   vector<Point> poly_points;
   Mat output;
 
-//   inputImage.copyTo(output);
-//   poly_points.push_back(lane[2]);
-//   poly_points.push_back(lane[0]);
-//   poly_points.push_back(lane[1]);
-//   poly_points.push_back(lane[3]);
-//   fillConvexPoly(output, poly_points, Scalar(0, 0, 255), CV_AA, 0);
- // addWeighted(output, 0.3, inputImage, 1.0 - 0.3, 0, inputImage);
+  inputImage.copyTo(output);
+  poly_points.push_back(lane[2]);
+  poly_points.push_back(lane[0]);
+  poly_points.push_back(lane[1]);
+  poly_points.push_back(lane[3]);
+  fillConvexPoly(output, poly_points, Scalar(0, 0, 255), CV_AA, 0);
+   addWeighted(output, 0.3, inputImage, 1.0 - 0.3, 0, inputImage);
   double slope1  = (lane[1].y - lane[0].y) - (lane[1].x - lane[0].x);
   double slope2  = (lane[3].y - lane[2].y) - (lane[3].x - lane[2].x);
 
@@ -294,10 +295,10 @@ Lane_Cordinates GetLinesCordinates( Mat frame, vector<vector<Vec4i> > left_right
 	int LUpperY[left.size()];
 	int LLowerX[left.size()];
 	int LLowerY[left.size()];
-
-	right_lane_exist = left_lane_exist = false;
-
 	Vec4i right_final, left_final;
+
+	 right_lane_exist = left_lane_exist = false;
+
 
 	if(right.size())
 	{	
@@ -305,10 +306,10 @@ Lane_Cordinates GetLinesCordinates( Mat frame, vector<vector<Vec4i> > left_right
 		for( size_t i = 0; i < right.size(); i++ )
 		{
 			Vec4i l = right[i];
-			slope = (l[3]-l[1])/((double)(l[2]-l[0]));			//calculate slope to remove almost horizontal lines from this list
+			slope = (l[3]-l[1])/((double)(l[2]-l[0]));		
 		
-				if(slope>0.5 || slope<(-0.5))	                        //Draw only those lines which satisfy this slope criteria
-				{
+				if(slope>0.5 || slope<(-0.5))
+				{                        
 					UpperX[i] = l[0];
 					UpperY[i] = l[1];
 					LowerX[i] = l[2];
@@ -322,16 +323,17 @@ Lane_Cordinates GetLinesCordinates( Mat frame, vector<vector<Vec4i> > left_right
 		right_final[2] = (int)average(LowerX, right.size());
 		right_final[3] = (int)average(LowerY, right.size());
 	
-		//line(Output, Point(right_final[0], right_final[1]), Point(right_final[2], right_final[3]), Scalar(0,0,255), 3, CV_AA);	
+			
 	}
 	if(left.size())
 	{
+	
 		left_lane_exist = true;
 		for( size_t i = 0; i < left.size(); i++ )
 		{
 			Vec4i l = left[i];
-			slope = (l[3]-l[1])/((double)(l[2]-l[0]));				//calculate slope to remove almost horizontal lines from this list
-			if(slope>0.5 || slope<(-0.5))	                        //Draw only those lines which satisfy this slope criteria
+			slope = (l[3]-l[1])/((double)(l[2]-l[0]));				
+			if(slope>0.5 || slope<(-0.5))	                      
 			{
 				LUpperX[i] = l[0];
 				LUpperY[i] = l[1];
@@ -345,15 +347,16 @@ Lane_Cordinates GetLinesCordinates( Mat frame, vector<vector<Vec4i> > left_right
 			left_final[1] = average(LUpperY, left.size()); 
 			left_final[2] = average(LLowerX, left.size());
 			left_final[3] = average(LLowerY, left.size());
-		
-		//line(Output, Point(left_final[0], left_final[1]), Point(left_final[2], left_final[3]), Scalar(0,0,255), 3, CV_AA);
 	}	
 
 	lanes.left_lane_pts = left_final;
 	lanes.right_lane_pts = right_final;
 	lanes.right_lane = right_lane_exist;
 	lanes.left_lane = left_lane_exist;
+
 	
 	return lanes;
 
 }
+//https://github.com/abhi-kumar/CAR-DETECTION
+//https://github.com/anhydrous99/CarDetection

@@ -13,6 +13,7 @@
 #include "main.h"
 #include "lane_detection.h"
 #include "vehicle_detect.h"
+#include "signal_detect.h"
 #include "time_cal.h"
 #include "errno.h"
 
@@ -24,6 +25,7 @@ Status command;
 
 //https://github.com/abhi-kumar/CAR-DETECTION
 //https://github.com/anhydrous99/CarDetection
+String ped_cascade_name = "../pedestrian.xml";
 String car_cascade_name = "../cascade2.xml";
 sem_t sem_main;
 
@@ -36,7 +38,7 @@ int main(int argc, char** argv)
     unsigned int framecount = 0 ;
 
     int scope;
-
+    Mat Cap;
 
     VideoCapture cap(argv[1]);
      if(!cap.isOpened())
@@ -44,116 +46,92 @@ int main(int argc, char** argv)
         cout << "Error opening input video stream or file" << endl;
         return -1;
     }
+   
 
     car_cascade_name = string(argv[2]);
     if(!(LoadCascade(car_cascade_name)))
     {
-        cout<< "Error opening Cascade Classifier"<<endl; 
+        cout<< "Error opening  Car Cascade Classifier"<<endl; 
     }
-    
-     CreateSemaphores();
-    // Cap_frame = imread(argv[1]);
-    
-    // for(int core = 0; core < NUM_OF_CORES; core ++)
-    //     CPU_ZERO(&cpuset[core]);
-
-    // for(int core = 0 ; core< NUM_OF_CORES; core++)
-    // {
-    //     CPU_SET(core, &cpuset[core]);
-    //     pthread_attr_init(&sched_attr[core]);
-    //     pthread_attr_setaffinity_np(&sched_attr[core],sizeof(cpuset[core]), &cpuset[core]);
-        
-    // }
-
-
-
-    main_pid = getpid();
-    max_prio = sched_get_priority_max(SCHED_FIFO);
-	min_prio = sched_get_priority_min(SCHED_FIFO);
-
-    cout<<"max_prior"<<max_prio;
-    cout<<"min prior"<<min_prio;
-
-    int rc = sched_getparam(main_pid, &main_param);
-    main_param.sched_priority = max_prio-10;
-
-	int ret = sched_setscheduler(getpid(), SCHED_FIFO, &main_param);
-	if (ret < 0) 
-	{
-		printf("Unsuccessful in setting thread realtime prio %s \n",strerror(errno));
-		return 1;     
-	}
-    
-    pthread_attr_getscope(&main_attr, &scope);
- 	if(scope == PTHREAD_SCOPE_SYSTEM)
-    		printf("PTHREAD SCOPE SYSTEM\n");
-  	else if (scope == PTHREAD_SCOPE_PROCESS)
-    		printf("PTHREAD SCOPE PROCESS\n");
-	else
-	    	printf("PTHREAD SCOPE UNKNOWN\n");
-
-
-    for(int i = 0 ; i < NUM_OF_THREADS; i++)
+    if(!(LoadSignalCascade(ped_cascade_name)))
     {
-        pthread_attr_init(&sched_attr[i]);
-	    pthread_attr_setinheritsched(&sched_attr[i], PTHREAD_EXPLICIT_SCHED);
-	    pthread_attr_setschedpolicy(&sched_attr[i], SCHED_FIFO);
-	    pthread_attr_setscope(&sched_attr[i], PTHREAD_SCOPE_SYSTEM);
+        cout<< "Error opening Signal Cascade Classifier"<<endl; 
+    }
+     CreateSemaphores();
+
+
+    cap >> Cap;
+    resize(Cap,Cap_frame,Size(Cap.cols/2, Cap.rows/2));
+     VideoWriter output;
+    output.open("output.avi", CV_FOURCC('M','P','4','V'), cap.get(CV_CAP_PROP_FPS), Size(Cap_frame.cols, Cap_frame.rows ), true);
+    if(!output.isOpened())
+    {
+        cout << "Error opening output video stream or file" << endl;
+        return -1;
     }
 
-    rt_param[0].sched_priority = max_prio-20;
-    pthread_attr_setschedparam(&sched_attr[0], &rt_param[0]);
-
-    rt_param[1].sched_priority = max_prio-30;
-    pthread_attr_setschedparam(&sched_attr[1], &rt_param[1]);
-      cap >> Cap_frame;
-     pthread_create(&threads[0],(pthread_attr_t*)(&sched_attr[0]),lane_detection ,(void *) &(threadargs[0]));
-     pthread_create(&threads[1],(pthread_attr_t*)(&sched_attr[1]),vehicle_detect ,(void *) &(threadargs[1]));
-
+    pthread_create(&threads[0],(pthread_attr_t*)(&sched_attr[0]),lane_detection ,(void *) &(threadargs[0]));
+    pthread_create(&threads[1],(pthread_attr_t*)(&sched_attr[1]),vehicle_detect ,(void *) &(threadargs[1]));
+    pthread_create(&threads[2],(pthread_attr_t*)(&sched_attr[3]),signal_detect ,(void *) &(threadargs[2]));
 
     clock_gettime(CLOCK_REALTIME, &start);
     while(command == RUN)
     {
     
-        cap >> Cap_frame;
-        if(Cap_frame.empty())
-              break;
-    
+        cap >> Cap;
+           if(Cap.empty())
+              break; 
+        resize(Cap,Cap_frame,Size(Cap.cols/2, Cap.rows/2));
         framecount++;
-        char k = waitKey(15);
-        if(k == 27)
-           break;
-        sem_wait(&sem_lane);
-        DetectLanes();
-        sem_wait(&sem_vehicle);
-        DetectCars();
+     
+        if(framecount % 1 == 0)
+            sem_post(&sem_lane);
+         if(framecount % 1== 0)
+            sem_post(&sem_vehicle);
+         if(framecount % 10 == 0)
+            sem_post(&sem_signal);
 
+        char k = waitKey(5);
+        if(k == 27)
+        {
+           break;
+        }
+      
+        DetectLanes();
+        DetectCars();
+        DetectSignal();
+      
         imshow("Output",Cap_frame);
+        output.write(Cap_frame);
+
 
 
     }
     clock_gettime(CLOCK_REALTIME, &finish);
+
+    sem_post(&sem_lane);
+    sem_post(&sem_vehicle);
+    sem_post(&sem_signal);
+    DestroySemaphores();
+
     destroyAllWindows();
     command = STOP;
+
     for(int i=0;i<NUM_OF_THREADS;i++)
 		pthread_join(threads[i], NULL);
-    sem_post(&sem_lane);
-    DestroySemaphores();
     delta_t(&finish,&start,&diff);
     printf("Total Time spent is %ld\n", diff.tv_sec);
     printf("Total Frames Processed %d \n",framecount);
-    double frame_rate = framecount/(diff.tv_sec);
-     printf("Frame Rate = %d\n",(int)frame_rate);
+    float frame_rate = (float)(framecount/(diff.tv_sec));
+     printf("Frame Rate = %02f\n",frame_rate);
 }
-
-
-
 
 void DetectLanes()
 {
-   
+
         if(frame_locs.lane.left_lane)
         {
+         
             Vec4i left_final = frame_locs.lane.left_lane_pts;
             left_final[1] += Cap_frame.rows*0.5;
             left_final[3] += Cap_frame.rows*0.5;
@@ -161,22 +139,38 @@ void DetectLanes()
         }
        
         if(frame_locs.lane.right_lane)
-        {
+        {   
+           
             Vec4i right_final = frame_locs.lane.right_lane_pts;
             right_final[1] += Cap_frame.rows*0.5;
             right_final[3] += Cap_frame.rows*0.5;
             line(Cap_frame, Point(right_final[0], right_final[1]), Point(right_final[2], right_final[3]), Scalar(0,0,255), 3, CV_AA);
         } 
+    
         
 }
 
 void DetectCars()
 {
+   
     for(size_t i = 0; i< frame_locs.car_cord.size(); i++)
     {
         Rect r = frame_locs.car_cord[i];
         r.y = r.y+ (0.4* Cap_frame.rows);
+       
         rectangle(Cap_frame,r,Scalar(255,0,255), 2, 8, 0);
+    
+    }
+
+}
+
+void DetectSignal()
+{
+    for(size_t i = 0; i< frame_locs.signal_cord.size(); i++)
+    {
+        Rect r = frame_locs.signal_cord[i];
+     
+        rectangle(Cap_frame,r,Scalar(255,0,0), 2, 8, 0);
     
     }
 
@@ -190,7 +184,7 @@ void CreateSemaphores()
     if(sem_init(&sem_lane, 0, 0) == -1)
         printf("Error seminit\n"); 
 
-    if(sem_init(&sem_ped, 0, 0) == -1)
+    if(sem_init(&sem_signal, 0, 0) == -1)
         printf("Error seminit\n");
 
     if(sem_init(&sem_vehicle, 0, 0) == -1)
@@ -200,6 +194,6 @@ void CreateSemaphores()
 void DestroySemaphores()
 {
     sem_destroy(&sem_main);
-    sem_destroy(&sem_ped);
+    sem_destroy(&sem_signal);
     sem_destroy(&sem_vehicle);
 }

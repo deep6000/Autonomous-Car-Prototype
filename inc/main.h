@@ -27,7 +27,7 @@ using namespace cv;
 using namespace std;
 
 #define NUM_OF_CORES        (2)
-#define NUM_OF_THREADS      (1)
+#define NUM_OF_THREADS      (3)
 
 #define NSECS2SECS          (1000000000)
 
@@ -67,6 +67,20 @@ void DetectLanes();
  */
 void DetectCars();
 
+/**
+ * @brief 
+ * 
+ */
+void DetectSignal();
+/**
+ * @brief Create a Semaphores object
+ * 
+ */
 void CreateSemaphores();
+
+/**
+ * @brief 
+ * 
+ */
 void DestroySemaphores();
 #endif /* MAIN_H */

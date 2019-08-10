@@ -22,7 +22,6 @@ using namespace std;
 #define ConvertRGB2HSV(input,output) 			cvtColor(input, output, COLOR_BGR2HSV);
 #define ConvertRGB2GRAY(input,output) 			cvtColor(input, output, COLOR_BGR2GRAY);
 
-
 typedef struct Lane_Cordinates
 {
     Vec4i right_lane_pts;
@@ -36,6 +35,8 @@ typedef struct FramePts
 {
   Lane_Cordinates lane;
   vector<Rect> car_cord;
+  vector<Rect> signal_cord;
+
 } FramePts;
 
 typedef enum Status
@@ -52,6 +53,6 @@ extern FramePts frame_locs;
 
 extern CascadeClassifier car_cascade;
 
-extern sem_t sem_main, sem_lane,sem_vehicle, sem_ped;
+extern sem_t sem_main, sem_lane,sem_vehicle, sem_signal;
 
 #endif
