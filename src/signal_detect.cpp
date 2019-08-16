@@ -5,26 +5,30 @@
 
 
 CascadeClassifier ped_cascade;
-sem_t sem_signal;
+sem_t sem_signal,sem_signal_d;
 
 
 void* signal_detect(void* threadargs)
 {
-   // cout<<"Ped detect Entered"<<endl;
+  
+ 
     Mat frame , gray;
     while(command == RUN)
     {
+     
        sem_wait(&sem_signal);
-       // cout<<"Ped_detect started"<<endl;
+     
         frame = Cap_frame.clone();
         frame = CropSignalframe(frame);
+      
         ConvertRGB2GRAY(frame,gray);
         frame_locs.signal_cord = GetSignalCoordinates(gray);
         if(command == STOP)
             break;
-        //sem_post(&sem_ped);
-     //   cout<<"Ped sem post"<<endl;
+    
+    
     }
+   
     cout<<"Exiting Signal Detection"<<endl;
     pthread_exit(NULL);
 

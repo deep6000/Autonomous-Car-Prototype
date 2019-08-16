@@ -13,25 +13,25 @@
 
 
 CascadeClassifier car_cascade;
-sem_t sem_vehicle;
+sem_t sem_vehicle,sem_vehicle_d;
 
 void* vehicle_detect(void* threadargs)
 {
+    
     Mat frame , gray;
  
     while(command == RUN)
     {
-    sem_wait(&sem_vehicle);
-   // cout<<"vehicle started"<<endl;
-    frame = Cap_frame.clone();
-    frame = Cropframe(frame);
-    imwrite("signal.png",frame);
-   ConvertRGB2GRAY(frame,gray);
-    frame_locs.car_cord = GetVehicleCoordinates(gray);
-    if(command == STOP)
-        break;
-    //sem_post(&sem_vehicle);
-    //cout<<"leaving vehicle"<<endl;
+       
+        sem_wait(&sem_vehicle);
+        frame = Cap_frame.clone();
+        frame = Cropframe(frame);
+        ConvertRGB2GRAY(frame,gray);
+        frame_locs.car_cord = GetVehicleCoordinates(gray);
+        if(command == STOP)
+            break;
+      
+    
     }
     	cout<<"Exiting Vehicle Detection"<<endl;
         pthread_exit(NULL);
@@ -52,7 +52,7 @@ uint8_t LoadCascade(String cascade_name)
 vector<Rect> GetVehicleCoordinates(Mat frame)
 {
     vector<Rect> detected_cars;
-    car_cascade.detectMultiScale(frame,detected_cars, 1.2, 3, CASCADE_DO_CANNY_PRUNING, Size(0, 0));	
+    car_cascade.detectMultiScale(frame,detected_cars, 1.2, 3, 0);	
     return detected_cars;
 }
 

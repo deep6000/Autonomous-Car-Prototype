@@ -13,70 +13,54 @@
 double right_m, left_m;
 Point right_b,left_b;
 bool right_lane , left_lane;
-sem_t sem_lane;
+sem_t sem_lane, sem_lane_d;
+
 
 void* lane_detection(void* threadargs)
 {
 
-
+	int count = 0;
 	Mat input,frame,HLS,HSV,yellow,white,denoise,edge,lanes, lane_detect,roi_mask;
-	cout<<"lane entered"<<endl;
+
 	vector<vector<Vec4i>> left_right_lines;
-	vector<Point> lane(4);
+
 	Point l; 
+	vector<Vec4i> lines;
 	
 	while(command == RUN)
 	{
-		
+	
 		sem_wait(&sem_lane);
 
-		//frame = imread(argv[1]);
 		input = Cap_frame.clone();
 		frame = input( Rect( 0, input.rows/2, input.cols, input.rows*0.5));
-	
-		//imwrite("test.png",frame);
-		
+
 		ConvertRGB2HLS(frame,HLS);
-		//imshow("HLS",HLS);
-		//imwrite("HLS.png",HLS);
-		
+
 		ConvertRGB2HSV(frame, HSV);
-		//imwrite("HSV.png",HSV);
-		//imshow("HSV",HSV);
-		
+	
 		ExtractWhite(HLS,white);
-		//imwrite("white.png",white);
-		//imshow("white",white);
 
 		ExtractYellow(HSV,yellow)	
 		
-		//imshow("HLSyellow",yellow);
-		
 		OR_Frames(white, yellow, lanes);
-		//imshow("ORing",lanes);
 
 		denoise = DenoiseFrame(lanes,KERNEL_SIZE);
 		
-		//imshow("Denoise",denoise);
-
 		edge = DetectEdge(denoise,CANNY_MIN_THRES,CANNY_MAX_THRES);
-		//imshow("Edge",edge);
 
 	    roi_mask = CreateROImask(edge);
-		//imshow("ROI MASK", roi_mask);
-		
-		AND_Frames(edge, roi_mask, edge);
-		//imshow("Edge", edge);
 
-		vector<Vec4i> lines;
+		AND_Frames(edge, roi_mask, edge);
+
 		HOUGH_LINES(edge,lines);
 		
 		left_right_lines = LaneSeperation(lines, edge);
 		
-		//add semaphores here
 		frame_locs.lane = GetLinesCordinates(frame,left_right_lines);
-
+		
 	}
+
 	cout<<"Exiting Lane Detection"<<endl;
 	pthread_exit(NULL);
 
@@ -119,11 +103,11 @@ Mat CreateROImask(Mat input)
 		int sides = 4;
 		mask = Mat::zeros(Size(input.cols, input.rows), CV_8U);
 		//Points for ROI mask
-		mask_pts[0][0] = Point(input.cols*0.4,input.rows* 0.3);					
-		mask_pts[0][1] = Point(input.cols*0.2, input.rows*0.6);
+		mask_pts[0][0] = Point(input.cols*0.3,input.rows* 0.3);					
+		mask_pts[0][1] = Point(input.cols*0.1, input.rows*0.6);
 		//mask_pts[0][2] = Point(0, input.rows);						
 		mask_pts[0][2] = Point(input.cols*0.8, input.rows*0.6);	
-		mask_pts[0][3] = Point(input.cols*0.56, input.rows*0.3);					
+		mask_pts[0][3] = Point(input.cols*0.6, input.rows*0.3);					
 		const Point* pts_list[1] = {mask_pts[0]};
 		fillPoly(mask, pts_list, &sides, 1, 255, 8);
 		return mask;
@@ -274,10 +258,11 @@ Mat PlotLines(Mat inputImage, vector<Point> lane)
 
 Lane_Cordinates GetLinesCordinates( Mat frame, vector<vector<Vec4i> > left_right_lines)
 {
-	Lane_Cordinates lanes;
+
+	static Lane_Cordinates lanes;
+	Lane_Cordinates lanes2;
 	Mat Output;
 	frame.copyTo(Output);
-
 	vector<Vec4i> right;
 	vector<Vec4i> left;
 
@@ -299,9 +284,13 @@ Lane_Cordinates GetLinesCordinates( Mat frame, vector<vector<Vec4i> > left_right
 
 	 right_lane_exist = left_lane_exist = false;
 
-
+	static int right_count;
+	static int left_count;
+	right_count++;
+	left_count++;
 	if(right.size())
 	{	
+		right_count = 0;
 		right_lane_exist = true;
 		for( size_t i = 0; i < right.size(); i++ )
 		{
@@ -322,12 +311,13 @@ Lane_Cordinates GetLinesCordinates( Mat frame, vector<vector<Vec4i> > left_right
 		right_final[1] = (int)average(UpperY, right.size());
 		right_final[2] = (int)average(LowerX, right.size());
 		right_final[3] = (int)average(LowerY, right.size());
-	
+		lanes.right_lane_pts = right_final;
+		lanes.right_lane = right_lane_exist;
 			
 	}
 	if(left.size())
 	{
-	
+		left_count = 0;
 		left_lane_exist = true;
 		for( size_t i = 0; i < left.size(); i++ )
 		{
@@ -347,16 +337,23 @@ Lane_Cordinates GetLinesCordinates( Mat frame, vector<vector<Vec4i> > left_right
 			left_final[1] = average(LUpperY, left.size()); 
 			left_final[2] = average(LLowerX, left.size());
 			left_final[3] = average(LLowerY, left.size());
+
+				lanes.left_lane_pts = left_final;
+				lanes.left_lane = left_lane_exist;
 	}	
 
-	lanes.left_lane_pts = left_final;
-	lanes.right_lane_pts = right_final;
-	lanes.right_lane = right_lane_exist;
-	lanes.left_lane = left_lane_exist;
+	if(right_count < 10)
+	{
+		lanes2.right_lane_pts = lanes.right_lane_pts; 
+		lanes2.right_lane = lanes.right_lane ;
 
-	
-	return lanes;
+	}
+	if(right_count < 10)
+	{
+		lanes2.left_lane_pts = lanes.left_lane_pts;
+		lanes2.left_lane = lanes.left_lane ;
+
+	}
+	return lanes2;
 
 }
-//https://github.com/abhi-kumar/CAR-DETECTION
-//https://github.com/anhydrous99/CarDetection

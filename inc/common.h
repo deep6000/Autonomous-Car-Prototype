@@ -53,6 +53,6 @@ extern FramePts frame_locs;
 
 extern CascadeClassifier car_cascade;
 
-extern sem_t sem_main, sem_lane,sem_vehicle, sem_signal;
-
+extern sem_t sem_lane, sem_vehicle, sem_signal, sem_write;
+extern sem_t sem_lane_d, sem_vehicle_d, sem_signal_d;
 #endif

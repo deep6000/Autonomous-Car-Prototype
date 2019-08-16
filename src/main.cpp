@@ -18,118 +18,161 @@
 #include "errno.h"
 
 Mat Cap_frame;
-
+    Mat Cap;
 FramePts frame_locs;
 
 Status command;
+int test_count;
+String ped_cascade_name = "../signal.xml";
+String car_cascade_name = "../cars.xml";
 
-//https://github.com/abhi-kumar/CAR-DETECTION
-//https://github.com/anhydrous99/CarDetection
-String ped_cascade_name = "../pedestrian.xml";
-String car_cascade_name = "../cascade2.xml";
-sem_t sem_main;
+
+sem_t sem_write;
 
 
 
 int main(int argc, char** argv)
 {
+
     command = RUN;
     struct timespec start, finish, diff;
+    struct timespec Wstart, Wfinish, Wdiff;
     unsigned int framecount = 0 ;
-
+    cpu_set_t cpu , main_cpu, write_cpu; 
     int scope;
-    Mat Cap;
+
+    int i;
+
+  
+    
+    CPU_ZERO(&cpu);
+    CPU_ZERO(&main_cpu);
+    CPU_ZERO(&write_cpu);
+    CPU_SET(0, &main_cpu);
+    CPU_SET(1, &main_cpu);
+    CPU_SET(2, &write_cpu);
+    CPU_SET(3, &write_cpu);
+    char frame_name[12];
+
+    sched_setaffinity(0,sizeof(cpu_set_t),&main_cpu);
 
     VideoCapture cap(argv[1]);
-     if(!cap.isOpened())
+    if(!cap.isOpened())
     {
         cout << "Error opening input video stream or file" << endl;
         return -1;
     }
+    cap >> Cap;
+    framecount++;
    
-
-    car_cascade_name = string(argv[2]);
     if(!(LoadCascade(car_cascade_name)))
     {
         cout<< "Error opening  Car Cascade Classifier"<<endl; 
     }
+
     if(!(LoadSignalCascade(ped_cascade_name)))
     {
         cout<< "Error opening Signal Cascade Classifier"<<endl; 
     }
-     CreateSemaphores();
 
+    CreateSemaphores();
 
-    cap >> Cap;
     resize(Cap,Cap_frame,Size(Cap.cols/2, Cap.rows/2));
-     VideoWriter output;
-    output.open("output.avi", CV_FOURCC('M','P','4','V'), cap.get(CV_CAP_PROP_FPS), Size(Cap_frame.cols, Cap_frame.rows ), true);
-    if(!output.isOpened())
-    {
-        cout << "Error opening output video stream or file" << endl;
-        return -1;
-    }
 
-    pthread_create(&threads[0],(pthread_attr_t*)(&sched_attr[0]),lane_detection ,(void *) &(threadargs[0]));
-    pthread_create(&threads[1],(pthread_attr_t*)(&sched_attr[1]),vehicle_detect ,(void *) &(threadargs[1]));
-    pthread_create(&threads[2],(pthread_attr_t*)(&sched_attr[3]),signal_detect ,(void *) &(threadargs[2]));
 
+    pthread_attr_init(&rt_sched_attr[0]);
+	pthread_attr_setaffinity_np(&rt_sched_attr[0], sizeof(cpu_set_t), &main_cpu);
+    
+    pthread_attr_init(&rt_sched_attr[1]);
+	pthread_attr_setaffinity_np(&rt_sched_attr[1], sizeof(cpu_set_t), &write_cpu);
+
+    pthread_attr_init(&rt_sched_attr[2]);
+	pthread_attr_setaffinity_np(&rt_sched_attr[2], sizeof(cpu_set_t), &write_cpu);
+
+    pthread_attr_init(&rt_sched_attr[3]);
+	pthread_attr_setaffinity_np(&rt_sched_attr[3], sizeof(cpu_set_t), &main_cpu);
+
+    pthread_create(&threads[0],(pthread_attr_t*)&(rt_sched_attr[0]),lane_detection ,(void *) &(threadargs[0]));
+
+    pthread_create(&threads[1],(pthread_attr_t*)&(rt_sched_attr[1]),vehicle_detect ,(void *) &(threadargs[1]));
+
+    pthread_create(&threads[2],(pthread_attr_t*)&(rt_sched_attr[2]),signal_detect ,(void *) &(threadargs[2]));
+
+    pthread_create(&threads[3],(pthread_attr_t*)&(rt_sched_attr[2]),write_frame ,(void *) &(threadargs[3])); 
+
+
+
+ 
     clock_gettime(CLOCK_REALTIME, &start);
     while(command == RUN)
     {
-    
-        cap >> Cap;
-           if(Cap.empty())
-              break; 
-        resize(Cap,Cap_frame,Size(Cap.cols/2, Cap.rows/2));
-        framecount++;
+     //   clock_gettime(CLOCK_REALTIME, &Wstart);
+       
      
-        if(framecount % 1 == 0)
+        if(!(framecount % 4))
+        {
             sem_post(&sem_lane);
-         if(framecount % 1== 0)
-            sem_post(&sem_vehicle);
-         if(framecount % 10 == 0)
             sem_post(&sem_signal);
-
+        }
+        if(!(framecount % 2))
+            sem_post(&sem_vehicle);
+       
         char k = waitKey(5);
         if(k == 27)
         {
            break;
         }
-      
+       
         DetectLanes();
+     
         DetectCars();
+    
         DetectSignal();
-      
+        
+        sem_post(&sem_write);
+        if(framecount % 25 == 0)
+        {
+            sprintf(frame_name,"frame%d.jpg",framecount);
+            imwrite(frame_name,Cap_frame);
+        }
         imshow("Output",Cap_frame);
-        output.write(Cap_frame);
-
-
-
+      
+        // clock_gettime(CLOCK_REALTIME, &Wfinish);
+        // delta_t(&Wfinish,&Wstart,&Wdiff);
+        // printf("Time spent  for while is %ld secs %ld nsecs\n",Wdiff.tv_sec,Wdiff.tv_nsec);
+         cap >> Cap;
+        if(Cap.empty())
+              break; 
+        resize(Cap,Cap_frame,Size(Cap.cols/2, Cap.rows/2));
+        framecount++;
     }
+   
     clock_gettime(CLOCK_REALTIME, &finish);
 
+     
+    command = STOP;
     sem_post(&sem_lane);
     sem_post(&sem_vehicle);
     sem_post(&sem_signal);
+    sem_post(&sem_write);
     DestroySemaphores();
-
     destroyAllWindows();
-    command = STOP;
+    
 
     for(int i=0;i<NUM_OF_THREADS;i++)
 		pthread_join(threads[i], NULL);
+
     delta_t(&finish,&start,&diff);
     printf("Total Time spent is %ld\n", diff.tv_sec);
     printf("Total Frames Processed %d \n",framecount);
     float frame_rate = (float)(framecount/(diff.tv_sec));
-     printf("Frame Rate = %02f\n",frame_rate);
+    printf("Frame Rate = %2f\n",frame_rate);
 }
 
 void DetectLanes()
 {
-
-        if(frame_locs.lane.left_lane)
+  
+        if(frame_locs.lane.left_lane )
         {
          
             Vec4i left_final = frame_locs.lane.left_lane_pts;
@@ -158,7 +201,7 @@ void DetectCars()
         Rect r = frame_locs.car_cord[i];
         r.y = r.y+ (0.4* Cap_frame.rows);
        
-        rectangle(Cap_frame,r,Scalar(255,0,255), 2, 8, 0);
+        rectangle(Cap_frame,r,Scalar(0,255,0), 2, 8, 0);
     
     }
 
@@ -178,7 +221,7 @@ void DetectSignal()
 
 void CreateSemaphores()
 {
-    if(sem_init(&sem_main, 0, 0) == -1)
+    if(sem_init(&sem_write, 0, 0) == -1)
         printf("Error seminit\n");
 
     if(sem_init(&sem_lane, 0, 0) == -1)
@@ -189,11 +232,45 @@ void CreateSemaphores()
 
     if(sem_init(&sem_vehicle, 0, 0) == -1)
         printf("Error seminit\n");
+
+    if(sem_init(&sem_lane_d, 0, 0) == -1)
+        printf("Error seminit\n"); 
+
+    if(sem_init(&sem_signal_d, 0, 0) == -1)
+        printf("Error seminit\n");
+
+    if(sem_init(&sem_vehicle_d, 0, 0) == -1)
+        printf("Error seminit\n");
 }
 
 void DestroySemaphores()
 {
-    sem_destroy(&sem_main);
+    sem_destroy(&sem_write);
     sem_destroy(&sem_signal);
     sem_destroy(&sem_vehicle);
+    sem_destroy(&sem_lane);
+    sem_destroy(&sem_signal_d);
+    sem_destroy(&sem_vehicle_d);
+    sem_destroy(&sem_lane_d);
+}
+
+void* write_frame(void* threadargs)
+{
+    
+    Mat frame;
+    VideoWriter output;
+    output.open("output.avi", CV_FOURCC('M','P','4','V'),30 , Size(Cap.cols/2, Cap.rows/2 ), true);
+    if(!output.isOpened())
+    {
+        cout << "Error opening output video stream or file" << endl;
+    }
+
+    while(command == RUN)
+    {
+        sem_wait(&sem_write);
+
+        output.write(Cap_frame);
+    }
+    cout<<"Exiting write task"<<endl;
+
 }

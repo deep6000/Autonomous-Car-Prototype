@@ -27,7 +27,7 @@ using namespace cv;
 using namespace std;
 
 #define NUM_OF_CORES        (2)
-#define NUM_OF_THREADS      (3)
+#define NUM_OF_THREADS      (4)
 
 #define NSECS2SECS          (1000000000)
 
@@ -36,12 +36,9 @@ using namespace std;
 cpu_set_t cpuset[NUM_OF_CORES];
 
 pthread_t threads[NUM_OF_THREADS];
-pthread_attr_t sched_attr[NUM_OF_THREADS];
+pthread_attr_t rt_sched_attr[NUM_OF_THREADS];
 pthread_attr_t main_attr;
-int max_prio, min_prio;
-struct sched_param rt_param[NUM_OF_THREADS];
-int rt_protocol;
-pid_t main_pid;
+
 struct sched_param main_param;
 
 
@@ -83,4 +80,8 @@ void CreateSemaphores();
  * 
  */
 void DestroySemaphores();
+
+void* write_frame(void* threadargs);
+
 #endif /* MAIN_H */
+
