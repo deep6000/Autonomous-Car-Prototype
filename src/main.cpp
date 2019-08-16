@@ -2,7 +2,7 @@
 /**
  * @file main.cpp
  * @author Deepesh Sonigra
- * @brief 
+ * @brief Autonomous Car Prototype 
  * @version 0.1
  * @date 2019-08-06
  * 
