@@ -90,7 +90,7 @@ int main(int argc, char** argv)
 	pthread_attr_setaffinity_np(&rt_sched_attr[2], sizeof(cpu_set_t), &write_cpu);
 
     pthread_attr_init(&rt_sched_attr[3]);
-	pthread_attr_setaffinity_np(&rt_sched_attr[3], sizeof(cpu_set_t), &main_cpu);
+	pthread_attr_setaffinity_np(&rt_sched_attr[3], sizeof(cpu_set_t), &write_cpu);
 
     pthread_create(&threads[0],(pthread_attr_t*)&(rt_sched_attr[0]),lane_detection ,(void *) &(threadargs[0]));
 
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
 
     pthread_create(&threads[2],(pthread_attr_t*)&(rt_sched_attr[2]),signal_detect ,(void *) &(threadargs[2]));
 
-    pthread_create(&threads[3],(pthread_attr_t*)&(rt_sched_attr[2]),write_frame ,(void *) &(threadargs[3])); 
+    pthread_create(&threads[3],(pthread_attr_t*)&(rt_sched_attr[3]),write_frame ,(void *) &(threadargs[3])); 
 
 
 
@@ -130,11 +130,7 @@ int main(int argc, char** argv)
         DetectSignal();
         
         sem_post(&sem_write);
-        if(framecount % 25 == 0)
-        {
-            sprintf(frame_name,"frame%d.jpg",framecount);
-            imwrite(frame_name,Cap_frame);
-        }
+      
         imshow("Output",Cap_frame);
       
         // clock_gettime(CLOCK_REALTIME, &Wfinish);
