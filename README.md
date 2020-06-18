@@ -3,23 +3,27 @@
 # Aim -
 To design an Autonomous car prototype which could sense the environment variables like the road lanes, vehicles, road signs and traffic signals.
 
-# Introduction-
+# Functional Requirements
+## Lane Detection
+Lane Detection forms an integral part of autonomous car as it plays an important role in preventing accidents. The system should detect the white and yellow lanes on the road real-time and mark it on the frame.
+The coordinates can then be used to compare the location of the vehicle with the location of the lane. If the vehicle intersects the lane we could warn the system about it.
 
-An Autonomous car is defined as a robotic vehicle, which without any human interaction could fulfil all transportation capabilities.
-The autonomous car has a camera installed in the front side of the car. The camera is installed in such a way that it captures the  lanes, vehicles, pedestrians, traffic signals, and road signs.
-This camera can be used to capture frames, and environmental variables like the lane, vehicles and traffic signs can be detected.
-A human driver senses all these parameters and then take a decision accordingly on what could be the next step.
-This is what an autonomous car does. It senses the variable, analyse it’s value and then take decision accordingly.
-An autonomous car consists of various sensors integrated with camera to give cameras inputs it cannot calculate or takes a long time to calculate. 
-Sensors like objection detector to detect objects very close or lightness sensor to give light values could be very important parameters for camera calibration.
-The prototype takes an input video as an argument and starts processing it. 
-All the processed frames are written into an output video.
-The autonomous car consists of the 4 modules, namely, Lane detection module, vehicle detection module, traffic sign detection module, and pedestrian detection module.
-All these modules are integrated together on a Jetson Nano using multi-threading and scheduling to achieve desirable frame rate.
-The lane detection module detects the lane, vehicle detection module detects the vehicle, traffic signal detection module detects the signal and pedestrian module detects the pedestrians
-This prototype is limited to detection only and does not involve processing of that data.
-Also the prototype limits itself with one jetson nano. With resources being limited the frame per second cannot be achieved to exactly 30 FPS but is achieved as close as possible.
-Adding more modules will definitely decrease the processing speed thus affecting the real time capabilities of the system. 
+## Vehicle Detection
+The vehicles are the moving objects on the road and most prone to accidents. The system should be able to detect the vehicles in its region of interest and should be able to denote it on the frame by drawing a rectangle.
+These locations of the vehicle could be further used to make decisions of keeping considerable distance between those cars.
 
+## Traffic Signal Detection
+Traffic Signs provide assistance to driving by giving a feedback of when it is safe to go ahead. The system should be able to detect the traffic signs in the frame which are facing the vehicle.
 
- 
+## Pedestrian Detection
+The pedestrians form the most important and critical environment variable when it comes to autonomous cars. The system should be able to detect pedestrians in its region of interest.
+
+## Real-Time Processing
+Autonomous Cars are critical systems and they should produce results real- time.
+The system should be able to run all modules in parallel and detect all the characteristics required and to plot it on the frame. As this system takes an input video, should be able to achieve fps close to the input video.  
+
+## Output Video
+The system takes input video as an argument as doesn’t have a live camera. The system should be able to write a video with all the sensing parameters on the frame
+
+## Machine Vision and Machine Learning  Algorithm
+The system should be able to use the machine vision and machine learning  algorithm to detect objects so that it’s more accurate and real-time
