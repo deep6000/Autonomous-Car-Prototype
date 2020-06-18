@@ -15,9 +15,6 @@ These locations of the vehicle could be further used to make decisions of keepin
 ## Traffic Signal Detection
 Traffic Signs provide assistance to driving by giving a feedback of when it is safe to go ahead. The system should be able to detect the traffic signs in the frame which are facing the vehicle.
 
-## Pedestrian Detection
-The pedestrians form the most important and critical environment variable when it comes to autonomous cars. The system should be able to detect pedestrians in its region of interest.
-
 ## Real-Time Processing
 Autonomous Cars are critical systems and they should produce results real- time.
 The system should be able to run all modules in parallel and detect all the characteristics required and to plot it on the frame. As this system takes an input video, should be able to achieve fps close to the input video.  
