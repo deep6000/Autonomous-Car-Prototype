@@ -26,4 +26,4 @@ The system takes input video as an argument as doesn’t have a live camera. The
 The system should be able to use the machine vision and machine learning  algorithm to detect objects so that it’s more accurate and real-time
 
 # Demo Video
-https://github.com/deep6000/Autonomous-Car-Prototype/blob/master/src/output.avi
+https://drive.google.com/drive/folders/1awO1N5PCaEs3MCvBdCA01pIQ-LU6Uzkr
